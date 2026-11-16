@@ -1,0 +1,6 @@
+{
+  "name": "LCM Academy - Little Creative Minds Early Childhood Daycare",
+  "description": "Little Creative Minds Academy is a loving, home-based daycare founded in 2016 for children 5 months to 5 years, offering NCF-aligned learning, meals, karate, and small classes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

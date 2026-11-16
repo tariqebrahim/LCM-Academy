@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "Outfit", system-ui, -apple-system, sans-serif;
+  --color-brand-blue: #0b38cc;
+  --color-brand-blue-hover: #082ca6;
+  --color-brand-blue-light: #eff4ff;
+  --color-brand-coral: #f43f5e;
+  --color-brand-coral-light: #fff1f2;
+  --color-brand-yellow: #f59e0b;
+  --color-brand-yellow-light: #fefce8;
+  --color-brand-green: #16a34a;
+  --color-brand-green-light: #f0fdf4;
+  --color-brand-sky: #0284c7;
+  --color-brand-sky-light: #f0f9ff;
+  --color-brand-purple: #9333ea;
+  --color-brand-purple-light: #faf5ff;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  color: #1e293b;
+  background-color: #fbfbf9;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: "Outfit", system-ui, -apple-system, sans-serif;
+}
