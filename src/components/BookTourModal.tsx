@@ -5,9 +5,14 @@ import { EnquiryForm } from './EnquiryForm';
 interface BookTourModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTourOption?: string;
 }
 
-export const BookTourModal: React.FC<BookTourModalProps> = ({ isOpen, onClose }) => {
+export const BookTourModal: React.FC<BookTourModalProps> = ({
+  isOpen,
+  onClose,
+  initialTourOption,
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -23,7 +28,11 @@ export const BookTourModal: React.FC<BookTourModalProps> = ({ isOpen, onClose })
         </button>
 
         <div className="max-h-[85vh] overflow-y-auto">
-          <EnquiryForm onSuccessCallback={undefined} />
+          <EnquiryForm
+            key={initialTourOption ?? 'general'}
+            isTourBooking
+            initialTourOption={initialTourOption}
+          />
         </div>
       </div>
     </div>

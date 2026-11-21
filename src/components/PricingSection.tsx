@@ -11,7 +11,7 @@ import { ActivePage } from '../types';
 
 interface PricingSectionProps {
   setActivePage: (page: ActivePage) => void;
-  onOpenBookTour: () => void;
+  onOpenBookTour: (tourOption?: string) => void;
 }
 
 export const PricingSection: React.FC<PricingSectionProps> = ({
@@ -109,7 +109,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
               <div className="pt-6 mt-6 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={onOpenBookTour}
+                  onClick={() => onOpenBookTour(plan.plan)}
                   className="w-full py-3.5 px-4 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition flex items-center justify-center gap-2"
                 >
                   <Calendar className="w-4 h-4 text-amber-300" />
@@ -203,7 +203,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
 
             <button
               type="button"
-              onClick={onOpenBookTour}
+              onClick={() => onOpenBookTour('Academy Tour (General)')}
               className="py-3 px-5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-xs transition flex items-center gap-2 shrink-0"
             >
               <Calendar className="w-4 h-4 text-amber-300" />

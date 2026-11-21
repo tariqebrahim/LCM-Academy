@@ -157,8 +157,8 @@ export const ContactSection: React.FC = () => {
                     <span className="font-semibold text-slate-800 block text-xs sm:text-sm">
                       Fri: 07:30 – 17:00
                     </span>
-                    <span className="text-xs text-slate-600 block mt-0.5">
-                      Half-Day: 07:30 – 13:00
+                    <span className="text-xs font-semibold text-blue-700 block mt-1">
+                      Academy Tours: Saturdays, 10:00 – 12:00 (30-min sessions)
                     </span>
                   </div>
                 </div>

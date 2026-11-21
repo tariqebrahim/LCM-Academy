@@ -124,7 +124,7 @@ export const EnrolmentPage: React.FC<EnrolmentPageProps> = ({ onBackToHome }) =>
             <span className="text-xs font-bold text-blue-700">Step 2</span>
             <h3 className="font-bold text-slate-900 text-sm">Tour & Family Meeting</h3>
             <p className="text-xs text-slate-500">
-              Visit our home-based daycare, meet Tasneem, and let your child explore.
+              Visit our home-based daycare on Saturdays (10:00 AM – 12:00 PM, 30-min sessions), meet Tasneem, and let your child explore.
             </p>
           </div>
 

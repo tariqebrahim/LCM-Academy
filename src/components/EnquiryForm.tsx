@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   CheckCircle2,
   Send,
   User,
-  Users,
   Calendar,
+  Clock,
   Baby,
   ShieldCheck,
-  FileCheck,
   Sparkles,
-  Phone,
-  Mail,
-  MapPin,
-  HelpCircle,
+  AlertCircle,
 } from 'lucide-react';
-import { ACADEMY_INFO } from '../data/daycareData';
+import {
+  TOUR_OPTIONS,
+  TOUR_TIME_SLOTS,
+  getUpcomingSaturdays,
+} from '../data/daycareData';
 
 export interface ChildEnquiry {
   firstName: string;
@@ -39,6 +39,10 @@ export interface EnquiryFormData {
   };
   hearAboutUs: string;
   questionsOrComments: string;
+  bookAcademyTour: boolean;
+  tourOption: string;
+  tourDate: string;
+  tourTimeSlot: string;
   consentPopia: boolean;
   consentConfidentialPack: boolean;
 }
@@ -50,9 +54,19 @@ const defaultChild: ChildEnquiry = {
   ageMonths: '0',
 };
 
-export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
+export interface EnquiryFormProps {
+  onSuccessCallback?: () => void;
+  isTourBooking?: boolean;
+  initialTourOption?: string;
+}
+
+export const EnquiryForm: React.FC<EnquiryFormProps> = ({
   onSuccessCallback,
+  isTourBooking = false,
+  initialTourOption = TOUR_OPTIONS[0],
 }) => {
+  const upcomingSaturdays = useMemo(() => getUpcomingSaturdays(12), []);
+
   const [formData, setFormData] = useState<EnquiryFormData>({
     parentFullName: '',
     cellNumber: '',
@@ -69,12 +83,17 @@ export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
     },
     hearAboutUs: '',
     questionsOrComments: '',
+    bookAcademyTour: isTourBooking,
+    tourOption: initialTourOption,
+    tourDate: upcomingSaturdays[0]?.value ?? '',
+    tourTimeSlot: '',
     consentPopia: false,
     consentConfidentialPack: false,
   });
 
   const [submitted, setSubmitted] = useState(false);
   const [referenceCode, setReferenceCode] = useState('');
+  const [formError, setFormError] = useState('');
 
   const handleNumChildrenChange = (count: number) => {
     const safeCount = Math.max(1, Math.min(count, 6));
@@ -104,11 +123,28 @@ export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
+
+    if (formData.bookAcademyTour) {
+      const validSaturday = upcomingSaturdays.some((sat) => sat.value === formData.tourDate);
+      const validSlot = (TOUR_TIME_SLOTS as readonly string[]).includes(formData.tourTimeSlot);
+      if (!validSaturday) {
+        setFormError('Please select an available Saturday for your academy tour.');
+        return;
+      }
+      if (!validSlot) {
+        setFormError('Please select a 30-minute tour session between 10:00 AM and 12:00 PM.');
+        return;
+      }
+    }
+
     if (!formData.consentPopia || !formData.consentConfidentialPack) {
-      alert('Please accept both consent checkboxes to proceed.');
+      setFormError('Please accept both consent checkboxes to proceed.');
       return;
     }
-    const ref = `LCM-ENQ-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const prefix = formData.bookAcademyTour ? 'LCM-TOUR' : 'LCM-ENQ';
+    const ref = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}`;
     setReferenceCode(ref);
     setSubmitted(true);
     if (onSuccessCallback) {
@@ -133,11 +169,19 @@ export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
       },
       hearAboutUs: '',
       questionsOrComments: '',
+      bookAcademyTour: isTourBooking,
+      tourOption: initialTourOption,
+      tourDate: upcomingSaturdays[0]?.value ?? '',
+      tourTimeSlot: '',
       consentPopia: false,
       consentConfidentialPack: false,
     });
+    setFormError('');
     setSubmitted(false);
   };
+
+  const selectedSaturdayLabel =
+    upcomingSaturdays.find((s) => s.value === formData.tourDate)?.label ?? formData.tourDate;
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg p-6 sm:p-10 transition-all">
@@ -149,26 +193,42 @@ export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
 
           <div className="space-y-2">
             <span className="text-xs font-bold uppercase tracking-widest text-emerald-700">
-              Enquiry Received
+              {formData.bookAcademyTour ? 'Saturday Academy Tour Booked' : 'Enquiry Received'}
             </span>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Thank You, {formData.parentFullName}!
             </h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              We have safely received your enquiry for{' '}
+              We have safely received your {formData.bookAcademyTour ? 'academy tour booking' : 'enquiry'} for{' '}
               <strong className="text-slate-900">
                 {formData.children.map((c) => c.firstName || 'your child').join(', ')}
               </strong>
               . Tasneem will contact you at{' '}
-              <strong className="text-slate-900">{formData.cellNumber}</strong> shortly with our Parent Information Pack.
+              <strong className="text-slate-900">{formData.cellNumber}</strong> shortly with confirmation and our Parent Information Pack.
             </p>
           </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left text-xs space-y-2 text-slate-700">
             <div className="flex justify-between border-b border-slate-200 pb-2">
-              <span className="text-slate-500 font-medium">Enquiry Reference:</span>
+              <span className="text-slate-500 font-medium">Reference:</span>
               <span className="font-mono font-bold text-blue-700">{referenceCode}</span>
             </div>
+            {formData.bookAcademyTour && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Tour Option:</span>
+                  <span className="font-semibold text-slate-800">{formData.tourOption}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Tour Date:</span>
+                  <span className="font-semibold text-slate-800">{selectedSaturdayLabel}</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-200 pb-2">
+                  <span className="text-slate-500 font-medium">30-Min Session:</span>
+                  <span className="font-bold text-blue-700">{formData.tourTimeSlot}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between">
               <span className="text-slate-500 font-medium">Children:</span>
               <span className="font-semibold text-slate-800">
@@ -193,7 +253,7 @@ export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
               onClick={resetForm}
               className="px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition"
             >
-              Submit Another Enquiry
+              {isTourBooking ? 'Book Another Tour' : 'Submit Another Enquiry'}
             </button>
           </div>
         </div>
@@ -203,14 +263,157 @@ export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
           <div className="border-b border-slate-100 pb-5">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700 mb-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Admissions & Daycare Places</span>
+              <span>
+                {isTourBooking ? 'Academy Tour Booking' : 'Admissions & Daycare Places'}
+              </span>
             </div>
             <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Parent Enquiry Form
+              {isTourBooking ? 'Book an Academy Tour' : 'Parent Enquiry Form'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Please complete the details below. We review every enquiry personally to ensure class compatibility and availability.
+              {isTourBooking
+                ? 'Tours take place strictly on Saturdays between 10:00 AM and 12:00 PM in 30-minute sessions.'
+                : 'Please complete the details below. We review every enquiry personally to ensure class compatibility and availability.'}
             </p>
+          </div>
+
+          {/* Tour Scheduling Section (Mandatory in Tour Modal, Optional in General Enquiry) */}
+          <div className="space-y-4">
+            {!isTourBooking && (
+              <label
+                className={`flex items-start gap-3 p-4 rounded-2xl border transition cursor-pointer ${
+                  formData.bookAcademyTour
+                    ? 'border-blue-400 bg-blue-50/50'
+                    : 'border-slate-200 bg-slate-50/70 hover:border-slate-300'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={formData.bookAcademyTour}
+                  onChange={(e) => {
+                    setFormError('');
+                    setFormData({
+                      ...formData,
+                      bookAcademyTour: e.target.checked,
+                    });
+                  }}
+                  className="mt-0.5 rounded text-blue-600 w-4 h-4 shrink-0"
+                />
+                <span className="text-xs leading-snug">
+                  <strong className="text-slate-900 block text-sm">
+                    Schedule an Academy Tour
+                  </strong>
+                  <span className="text-slate-600 block mt-0.5">
+                    Available on <strong>Saturdays only, 10:00 AM – 12:00 PM (30-minute sessions)</strong>.
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {formData.bookAcademyTour && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/80 pb-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-blue-700" />
+                    <span>Saturday Tour Schedule</span>
+                  </h4>
+                  <span className="text-[11px] font-bold text-blue-800 bg-white px-2.5 py-1 rounded-md border border-blue-200">
+                    Saturdays Only · 10:00 AM – 12:00 PM · 30-Min Sessions
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="tourOptionSelect"
+                      className="block text-xs font-bold text-slate-800 mb-1"
+                    >
+                      Tour option <span className="text-rose-600">*</span>
+                    </label>
+                    <select
+                      id="tourOptionSelect"
+                      required={formData.bookAcademyTour}
+                      value={formData.tourOption}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tourOption: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    >
+                      {TOUR_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="tourSaturdaySelect"
+                      className="block text-xs font-bold text-slate-800 mb-1"
+                    >
+                      Saturday date <span className="text-rose-600">*</span>
+                    </label>
+                    <select
+                      id="tourSaturdaySelect"
+                      required={formData.bookAcademyTour}
+                      value={formData.tourDate}
+                      onChange={(e) => {
+                        setFormError('');
+                        setFormData({ ...formData, tourDate: e.target.value });
+                      }}
+                      className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    >
+                      {upcomingSaturdays.map((sat) => (
+                        <option key={sat.value} value={sat.value}>
+                          {sat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="block text-xs font-bold text-slate-800 mb-2">
+                    Select a 30-minute session (10:00 AM – 12:00 PM){' '}
+                    <span className="text-rose-600">*</span>
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {TOUR_TIME_SLOTS.map((slot) => {
+                      const isSelected = formData.tourTimeSlot === slot;
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => {
+                            setFormError('');
+                            setFormData({ ...formData, tourTimeSlot: slot });
+                          }}
+                          aria-pressed={isSelected}
+                          className={`p-2.5 rounded-xl border text-center transition ${
+                            isSelected
+                              ? 'bg-blue-700 border-blue-700 text-white shadow-xs'
+                              : 'bg-white border-slate-300 text-slate-800 hover:border-blue-400 hover:bg-blue-50/40'
+                          }`}
+                        >
+                          <span className="flex items-center justify-center gap-1 text-xs font-bold">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            <span>{slot}</span>
+                          </span>
+                          <span
+                            className={`block text-[10px] mt-0.5 ${
+                              isSelected ? 'text-blue-100' : 'text-slate-500'
+                            }`}
+                          >
+                            30 min · Saturday
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 1: Parent & Contact Details */}
@@ -605,19 +808,37 @@ export const EnquiryForm: React.FC<{ onSuccessCallback?: () => void }> = ({
             </div>
           </div>
 
+          {/* Inline validation feedback */}
+          {formError && (
+            <div className="flex items-center gap-2 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-800">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
+
           {/* Submit Button */}
           <div className="pt-2">
             <button
               type="submit"
-              disabled={!formData.consentPopia || !formData.consentConfidentialPack}
+              disabled={
+                !formData.consentPopia ||
+                !formData.consentConfidentialPack ||
+                (formData.bookAcademyTour && (!formData.tourDate || !formData.tourTimeSlot))
+              }
               className={`w-full py-3.5 px-6 font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${
-                formData.consentPopia && formData.consentConfidentialPack
+                formData.consentPopia &&
+                formData.consentConfidentialPack &&
+                (!formData.bookAcademyTour || (formData.tourDate && formData.tourTimeSlot))
                   ? 'bg-blue-700 hover:bg-blue-800 text-white active:scale-99'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
               }`}
             >
               <Send className="w-4 h-4" />
-              <span>Submit Daycare Enquiry</span>
+              <span>
+                {formData.bookAcademyTour
+                  ? 'Confirm Saturday Academy Tour'
+                  : 'Submit Daycare Enquiry'}
+              </span>
             </button>
 
             <p className="text-[11px] text-slate-500 text-center mt-2">

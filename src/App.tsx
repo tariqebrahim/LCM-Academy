@@ -20,6 +20,12 @@ import { TermsPage } from './pages/TermsPage';
 export default function App() {
   const [activePage, setActivePage] = useState<ActivePage>('home');
   const [isBookTourOpen, setIsBookTourOpen] = useState(false);
+  const [selectedTourOption, setSelectedTourOption] = useState<string>('Academy Tour (General)');
+
+  const handleOpenBookTour = (tourOption = 'Academy Tour (General)') => {
+    setSelectedTourOption(tourOption);
+    setIsBookTourOpen(true);
+  };
 
   // Sync hash routing so external links / browser buttons work smoothly
   useEffect(() => {
@@ -56,7 +62,7 @@ export default function App() {
       <Navbar
         activePage={activePage}
         setActivePage={handlePageChange}
-        onOpenBookTour={() => setIsBookTourOpen(true)}
+        onOpenBookTour={() => handleOpenBookTour('Academy Tour (General)')}
       />
 
       {/* Main Content Area */}
@@ -65,7 +71,7 @@ export default function App() {
           <>
             <Hero
               setActivePage={handlePageChange}
-              onOpenBookTour={() => setIsBookTourOpen(true)}
+              onOpenBookTour={() => handleOpenBookTour('Academy Tour (General)')}
             />
             <WhoWeAre />
             <WhatWeOffer />
@@ -75,7 +81,7 @@ export default function App() {
             <WhyOurClientsChooseUs />
             <PricingSection
               setActivePage={handlePageChange}
-              onOpenBookTour={() => setIsBookTourOpen(true)}
+              onOpenBookTour={handleOpenBookTour}
             />
             <ContactSection />
           </>
@@ -98,13 +104,14 @@ export default function App() {
       <Footer
         activePage={activePage}
         setActivePage={handlePageChange}
-        onOpenBookTour={() => setIsBookTourOpen(true)}
+        onOpenBookTour={() => handleOpenBookTour('Academy Tour (General)')}
       />
 
       {/* Fast Tour Booking Modal */}
       <BookTourModal
         isOpen={isBookTourOpen}
         onClose={() => setIsBookTourOpen(false)}
+        initialTourOption={selectedTourOption}
       />
 
       {/* Floating Direct WhatsApp Button */}

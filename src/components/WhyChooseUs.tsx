@@ -119,13 +119,6 @@ export const WhyChooseUs: React.FC = () => {
                       {item.description}
                     </p>
 
-                    {/* Specific callout notices */}
-                    {item.id === 'medical' && (
-                      <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-blue-900 text-xs font-medium">
-                        <strong>Safety Assurance:</strong> Strict policy for the safety of every child. No over-the-counter medication is ever administered.
-                      </div>
-                    )}
-
                     {item.id === 'owners-background' && (
                       <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs font-medium">
                         <strong>Discipline & Warmth:</strong> Karate discipline meets gentle, nurturing home-based early childhood care.

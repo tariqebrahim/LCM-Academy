@@ -44,14 +44,6 @@ export const TermsPage: React.FC<TermsPageProps> = ({ onBackToHome }) => {
               <ShieldAlert className="w-5 h-5 text-blue-700" />
               1. Medical Care & Medication Administration Policy
             </h2>
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 font-medium space-y-2">
-              <p className="font-bold text-sm">
-                Strict Academy Rule:
-              </p>
-              <p>
-                "Prescription medication is given only with written parent consent, for example an asthma pump. Our staff do not give any other medication."
-              </p>
-            </div>
             <p className="text-slate-600">
               In accordance with this policy:
             </p>

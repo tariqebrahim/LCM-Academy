@@ -262,13 +262,6 @@ export const WHY_CHOOSE_US: WhyUsItem[] = [
     icon: 'Award',
   },
   {
-    id: 'medical',
-    title: 'Medical Care with Consent',
-    description: 'Prescription medication is given only with written parent consent, for example an asthma pump. Our staff do not give any other medication.',
-    highlight: true,
-    icon: 'Shield',
-  },
-  {
     id: 'first-aid',
     title: 'First-Aid Qualified',
     description: 'Our staff are first-aid qualified, ensuring immediate, calm, and certified response to any childhood scrape or emergency.',
@@ -279,12 +272,6 @@ export const WHY_CHOOSE_US: WhyUsItem[] = [
     title: 'Qualified Educators',
     description: 'Educators are qualified in Early Childhood Development (ECD), bringing evidence-based teaching and emotional warmth.',
     icon: 'BookOpen',
-  },
-  {
-    id: 'experienced-assistant',
-    title: 'Experienced Assistant',
-    description: 'Our dedicated daycare assistant has more than 5 years of hands-on experience nurturing babies and toddlers.',
-    icon: 'Users',
   },
   {
     id: 'small-classes',
@@ -369,9 +356,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     isPopular: true,
     features: [
       'Administrative & enrolment processing',
-      'Parent Information Pack & welcome guide',
-      'Cot bedding, learner cot allocation & cubby setup',
-      'Developmental milestone tracking portfolio',
     ],
   },
   {
@@ -381,13 +365,61 @@ export const PRICING_PLANS: PricingPlan[] = [
     specialPrice: 'R2 500',
     specialPeriod: '',
     features: [
-      'Enrolment for 2 siblings',
-      'Parent Information Pack & administrative setup',
-      'Reserved places in respective age groups',
+      'Administrative & enrolment processing',
     ],
   },
 ];
 
 export const PRICING_NOTICE =
   'IMPORTANT: The figures above are provisional. The academy will send an updated fee document. Final prices will be provided in writing upon application.';
+
+export const TOUR_OPTIONS = [
+  'Academy Tour (General)',
+  'Registration, Single Child',
+  'Registration, Siblings',
+] as const;
+
+export const TOUR_TIME_SLOTS = [
+  '10:00 – 10:30',
+  '10:30 – 11:00',
+  '11:00 – 11:30',
+  '11:30 – 12:00',
+] as const;
+
+export interface SaturdayDateOption {
+  value: string;
+  label: string;
+}
+
+export function getUpcomingSaturdays(count = 12): SaturdayDateOption[] {
+  const results: SaturdayDateOption[] = [];
+  const now = new Date();
+  const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayOfWeek = candidate.getDay(); // 0 = Sun ... 6 = Sat
+  let daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+
+  // If today is Saturday and it's already 11:00 or later, start from next Saturday
+  if (daysUntilSaturday === 0 && now.getHours() >= 11) {
+    daysUntilSaturday = 7;
+  }
+
+  candidate.setDate(candidate.getDate() + daysUntilSaturday);
+
+  for (let i = 0; i < count; i++) {
+    const year = candidate.getFullYear();
+    const month = String(candidate.getMonth() + 1).padStart(2, '0');
+    const day = String(candidate.getDate()).padStart(2, '0');
+    const value = `${year}-${month}-${day}`;
+    const label = candidate.toLocaleDateString('en-ZA', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    results.push({ value, label });
+    candidate.setDate(candidate.getDate() + 7);
+  }
+
+  return results;
+}
 
