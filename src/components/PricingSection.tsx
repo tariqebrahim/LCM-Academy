@@ -26,9 +26,6 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Fees & Enrolment Plans
           </h2>
-          <p className="mt-3 text-slate-600 leading-relaxed text-base">
-            Honest, all-inclusive early education. Monthly fees include nutritious morning breakfast, freshly cooked hot lunch, and daily Kiddies Karate.
-          </p>
         </div>
 
         {/* Registration Fees Upon Acceptance Grid */}

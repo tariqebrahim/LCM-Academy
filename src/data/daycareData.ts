@@ -9,7 +9,7 @@ export const ACADEMY_INFO = {
   hours: 'Mon – Thurs: 07:30 – 17:30 | Fri: 07:30 – 17:00',
   halfDayHours: '07:30 – 13:00',
   fullDayHours: 'Mon – Thurs: 07:30 – 17:30 | Fri: 07:30 – 17:00',
-  phone: '+27 72 123 4567',
+  phone: '0711429700',
   email: 'info@lcmacademy.co.za',
   address: '08 Couch Crescent, Parow, Cape Town 7500',
   mapsEmbedUrl: 'https://maps.google.com/maps?q=08+Couch+Crescent,+Parow,+Cape+Town+7500&t=&z=16&ie=UTF8&iwloc=&output=embed',
