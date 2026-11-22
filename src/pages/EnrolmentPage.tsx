@@ -14,9 +14,11 @@ import {
   Download,
   AlertCircle,
   HelpCircle,
+  Mail,
 } from 'lucide-react';
 import { ACADEMY_INFO, AGE_GROUPS } from '../data/daycareData';
 import { EnrolmentFormData } from '../types';
+import { submitFormToAcademyEmail } from '../utils/formSubmission';
 
 interface EnrolmentPageProps {
   onBackToHome: () => void;
@@ -25,7 +27,10 @@ interface EnrolmentPageProps {
 export const EnrolmentPage: React.FC<EnrolmentPageProps> = ({ onBackToHome }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [refNumber, setRefNumber] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [mailtoUrl, setMailtoUrl] = useState('');
 
   const [formData, setFormData] = useState<EnrolmentFormData>({
     childFullName: '',
@@ -64,10 +69,56 @@ export const EnrolmentPage: React.FC<EnrolmentPageProps> = ({ onBackToHome }) =>
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError('');
+
     const generatedRef = `LCM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const fields: Record<string, string> = {
+      Reference: generatedRef,
+      'Form Type': 'Online Enrolment Application',
+      'Child Full Name': formData.childFullName,
+      'Child Date of Birth': formData.childDob,
+      'Child Gender': formData.childGender,
+      'Age Group': formData.ageGroup,
+      'Potty Trained': formData.pottyTrained,
+      'Allergies / Dietary': formData.allergiesOrDietary || 'None reported',
+      'Parent / Guardian Name': formData.parentFullName,
+      Relationship: formData.relationship,
+      'Parent Email': formData.parentEmail,
+      'Parent Phone': formData.parentPhone,
+      'Alternative Phone': formData.parentAltPhone || 'Not provided',
+      'Home Address': formData.homeAddress,
+      'Schedule Type': formData.scheduleType.replace('_', ' '),
+      'Needs Aftercare': formData.needsAftercare ? 'Yes' : 'No',
+      'Extra Murals Interest': formData.extraMuralsInterest.join(', ') || 'None',
+      'Intended Start Date': formData.intendedStartDate,
+      'Special Notes': formData.specialNotes || 'None',
+      'Prescription Medication Needed': formData.medicationConsentNeeded ? 'Yes' : 'No',
+      'Medication Details': formData.medicationDetails || 'N/A',
+      'Terms & Medical Policy Accepted': formData.acceptedTerms ? 'Yes' : 'No',
+    };
+
+    setIsSubmitting(true);
+    const result = await submitFormToAcademyEmail({
+      subject: `New Enrolment Application - ${formData.childFullName} [${generatedRef}]`,
+      replyTo: formData.parentEmail,
+      fields,
+    });
+    setIsSubmitting(false);
+
     setRefNumber(generatedRef);
+    setMailtoUrl(result.mailtoUrl);
+
+    if (!result.delivered) {
+      setSubmitError(
+        result.errorMessage ||
+          `Unable to reach the automated email relay right now. Please click below to send your enrolment application directly to ${ACADEMY_INFO.email}.`
+      );
+      return;
+    }
+
     setSubmitted(true);
     window.scrollTo({ top: 100, behavior: 'smooth' });
   };
@@ -184,7 +235,8 @@ export const EnrolmentPage: React.FC<EnrolmentPageProps> = ({ onBackToHome }) =>
             </div>
 
             <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-900 text-left">
-              <strong>Next Step:</strong> Tasneem will contact you within 24 to 48 hours to schedule your consultation visit and verify class capacity.
+              <strong>Next Step:</strong> Your application has been sent to{' '}
+              <strong>{ACADEMY_INFO.email}</strong>. Tasneem will contact you within 24 to 48 hours to schedule your Saturday consultation visit and verify class capacity.
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
@@ -199,12 +251,22 @@ export const EnrolmentPage: React.FC<EnrolmentPageProps> = ({ onBackToHome }) =>
                 type="button"
                 onClick={() => {
                   setSubmitted(false);
+                  setSubmitError('');
                   setCurrentStep(1);
                 }}
                 className="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 transition"
               >
                 Submit for Another Child
               </button>
+              {mailtoUrl && (
+                <a
+                  href={mailtoUrl}
+                  className="px-5 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 transition inline-flex items-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Send Copy via Email App</span>
+                </a>
+              )}
             </div>
           </div>
         ) : (
@@ -804,6 +866,25 @@ export const EnrolmentPage: React.FC<EnrolmentPageProps> = ({ onBackToHome }) =>
                     </label>
                   </div>
 
+                  {submitError && (
+                    <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-800 space-y-2.5">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <span>{submitError}</span>
+                      </div>
+                      {mailtoUrl && (
+                        <a
+                          href={mailtoUrl}
+                          onClick={() => setSubmitted(true)}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          <span>Send Directly via Email App to {ACADEMY_INFO.email}</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex justify-between pt-4 border-t border-slate-100">
                     <button
                       type="button"
@@ -814,15 +895,19 @@ export const EnrolmentPage: React.FC<EnrolmentPageProps> = ({ onBackToHome }) =>
                     </button>
                     <button
                       type="submit"
-                      disabled={!formData.acceptedTerms}
+                      disabled={isSubmitting || !formData.acceptedTerms}
                       className={`px-8 py-3 font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2 ${
-                        formData.acceptedTerms
+                        !isSubmitting && formData.acceptedTerms
                           ? 'bg-blue-700 hover:bg-blue-800 text-white'
                           : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                       }`}
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Submit Enrolment Application</span>
+                      <span>
+                        {isSubmitting
+                          ? `Sending to ${ACADEMY_INFO.email}...`
+                          : 'Submit Enrolment Application'}
+                      </span>
                     </button>
                   </div>
                 </div>

@@ -9,12 +9,15 @@ import {
   ShieldCheck,
   Sparkles,
   AlertCircle,
+  Mail,
 } from 'lucide-react';
 import {
+  ACADEMY_INFO,
   TOUR_OPTIONS,
   TOUR_TIME_SLOTS,
   getUpcomingSaturdays,
 } from '../data/daycareData';
+import { submitFormToAcademyEmail } from '../utils/formSubmission';
 
 export interface ChildEnquiry {
   firstName: string;
@@ -92,8 +95,11 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [referenceCode, setReferenceCode] = useState('');
   const [formError, setFormError] = useState('');
+  const [mailtoUrl, setMailtoUrl] = useState('');
+  const [emailDelivered, setEmailDelivered] = useState(false);
 
   const handleNumChildrenChange = (count: number) => {
     const safeCount = Math.max(1, Math.min(count, 6));
@@ -121,7 +127,10 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
     setFormData({ ...formData, children: updated });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const selectedSaturdayLabel =
+    upcomingSaturdays.find((s) => s.value === formData.tourDate)?.label ?? formData.tourDate;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
 
@@ -145,7 +154,71 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
 
     const prefix = formData.bookAcademyTour ? 'LCM-TOUR' : 'LCM-ENQ';
     const ref = `${prefix}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const childrenSummary = formData.children
+      .map(
+        (c, idx) =>
+          `Child ${idx + 1}: ${c.firstName || 'N/A'}${c.sex ? ` (${c.sex})` : ''}, ${c.ageYears} yr(s) ${c.ageMonths} mo(s)`
+      )
+      .join(' | ');
+
+    const interestsList = [
+      formData.interests.daycarePlaces ? 'Daycare places' : '',
+      formData.interests.academyDojoWaitlist ? 'Academy Dojo (2027) waitlist' : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
+
+    const fields: Record<string, string> = {
+      Reference: ref,
+      'Form Type': formData.bookAcademyTour ? 'Saturday Academy Tour Booking' : 'Parent Enquiry Form',
+      ...(formData.bookAcademyTour
+        ? {
+            'Tour Option': formData.tourOption,
+            'Tour Date (Saturday)': selectedSaturdayLabel,
+            '30-Minute Session': formData.tourTimeSlot,
+          }
+        : {}),
+      'Parent / Guardian Name': formData.parentFullName,
+      'Cell Number': formData.cellNumber,
+      'Email Address': formData.emailAddress,
+      Suburb: formData.suburb || 'Not provided',
+      'Second Parent / Guardian': formData.secondParentName || 'Not provided',
+      'Number of Children': String(formData.numberOfChildren),
+      'Children Details': childrenSummary,
+      'Preferred Start Date': formData.preferredStartDate || 'Not specified',
+      'Type of Care': formData.typeOfCare || 'Not specified',
+      Interests: interestsList || 'None selected',
+      'How Did You Hear About Us': formData.hearAboutUs || 'Not provided',
+      'Questions or Comments': formData.questionsOrComments || 'None',
+      'POPIA Consent': 'Confirmed',
+      'Confidential Pack Consent': 'Confirmed',
+    };
+
+    const subject = formData.bookAcademyTour
+      ? `Academy Tour Booking (${formData.tourOption}) - ${formData.parentFullName} [${ref}]`
+      : `New Daycare Enquiry - ${formData.parentFullName} [${ref}]`;
+
+    setIsSubmitting(true);
+    const result = await submitFormToAcademyEmail({
+      subject,
+      replyTo: formData.emailAddress,
+      fields,
+    });
+    setIsSubmitting(false);
+
     setReferenceCode(ref);
+    setMailtoUrl(result.mailtoUrl);
+    setEmailDelivered(result.delivered);
+
+    if (!result.delivered) {
+      setFormError(
+        result.errorMessage ||
+          `Unable to reach the automated email relay right now. Please click "Send via Email App" below to send your submission directly to ${ACADEMY_INFO.email}.`
+      );
+      return;
+    }
+
     setSubmitted(true);
     if (onSuccessCallback) {
       onSuccessCallback();
@@ -177,11 +250,10 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
       consentConfidentialPack: false,
     });
     setFormError('');
+    setMailtoUrl('');
+    setEmailDelivered(false);
     setSubmitted(false);
   };
-
-  const selectedSaturdayLabel =
-    upcomingSaturdays.find((s) => s.value === formData.tourDate)?.label ?? formData.tourDate;
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg p-6 sm:p-10 transition-all">
@@ -199,11 +271,12 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
               Thank You, {formData.parentFullName}!
             </h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              We have safely received your {formData.bookAcademyTour ? 'academy tour booking' : 'enquiry'} for{' '}
+              Your {formData.bookAcademyTour ? 'academy tour booking' : 'enquiry'} for{' '}
               <strong className="text-slate-900">
                 {formData.children.map((c) => c.firstName || 'your child').join(', ')}
-              </strong>
-              . Tasneem will contact you at{' '}
+              </strong>{' '}
+              has been sent to{' '}
+              <strong className="text-blue-700">{ACADEMY_INFO.email}</strong>. Tasneem will contact you at{' '}
               <strong className="text-slate-900">{formData.cellNumber}</strong> shortly with confirmation and our Parent Information Pack.
             </p>
           </div>
@@ -212,6 +285,12 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             <div className="flex justify-between border-b border-slate-200 pb-2">
               <span className="text-slate-500 font-medium">Reference:</span>
               <span className="font-mono font-bold text-blue-700">{referenceCode}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-medium">Sent To:</span>
+              <span className="font-semibold text-emerald-700">
+                {ACADEMY_INFO.email} {emailDelivered ? '(Delivered)' : ''}
+              </span>
             </div>
             {formData.bookAcademyTour && (
               <>
@@ -247,7 +326,7 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             </div>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
               onClick={resetForm}
@@ -255,6 +334,15 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             >
               {isTourBooking ? 'Book Another Tour' : 'Submit Another Enquiry'}
             </button>
+            {mailtoUrl && (
+              <a
+                href={mailtoUrl}
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition inline-flex items-center gap-1.5"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Send Copy via Email App</span>
+              </a>
+            )}
           </div>
         </div>
       ) : (
@@ -808,11 +896,23 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             </div>
           </div>
 
-          {/* Inline validation feedback */}
+          {/* Inline validation / delivery feedback */}
           {formError && (
-            <div className="flex items-center gap-2 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-800">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>{formError}</span>
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-800 space-y-2.5">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{formError}</span>
+              </div>
+              {mailtoUrl && (
+                <a
+                  href={mailtoUrl}
+                  onClick={() => setSubmitted(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-lg transition"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Send Directly via Email App to {ACADEMY_INFO.email}</span>
+                </a>
+              )}
             </div>
           )}
 
@@ -821,11 +921,13 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             <button
               type="submit"
               disabled={
+                isSubmitting ||
                 !formData.consentPopia ||
                 !formData.consentConfidentialPack ||
                 (formData.bookAcademyTour && (!formData.tourDate || !formData.tourTimeSlot))
               }
               className={`w-full py-3.5 px-6 font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 ${
+                !isSubmitting &&
                 formData.consentPopia &&
                 formData.consentConfidentialPack &&
                 (!formData.bookAcademyTour || (formData.tourDate && formData.tourTimeSlot))
@@ -835,14 +937,16 @@ export const EnquiryForm: React.FC<EnquiryFormProps> = ({
             >
               <Send className="w-4 h-4" />
               <span>
-                {formData.bookAcademyTour
+                {isSubmitting
+                  ? `Sending to ${ACADEMY_INFO.email}...`
+                  : formData.bookAcademyTour
                   ? 'Confirm Saturday Academy Tour'
                   : 'Submit Daycare Enquiry'}
               </span>
             </button>
 
             <p className="text-[11px] text-slate-500 text-center mt-2">
-              All information is kept strictly confidential under POPIA. We will never share your details with third parties.
+              Submissions are sent directly to {ACADEMY_INFO.email} and kept strictly confidential under POPIA.
             </p>
           </div>
         </form>
